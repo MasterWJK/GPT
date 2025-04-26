@@ -1,6 +1,6 @@
-qdrant_client
 openai
 streamlit
 PyPDF2
 langchain
 python-dotenv
+qdrant_client
