@@ -32,10 +32,7 @@ if st.button("Generate"):
                         {"role": "system", "content": "You are a helpful assistant."},
                         {"role": "user", "content": user_input},
                     ],
-        
                 )
-
-        
                 response_container.markdown(response.output_text)
 
             except Exception as e:
