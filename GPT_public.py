@@ -2,47 +2,41 @@ import os
 import streamlit as st
 from openai import OpenAI
 
-# ── 1) API key input ─────────────────────────────────────────────────
+# ── 1) Page config ─────────────────────────────────────────────────
 st.set_page_config(page_title="OpenAI Playground", layout="centered")
 
+# ── 2) API key input ─────────────────────────────────────────────────
 # Let the user enter their API key at runtime
 api_key = st.sidebar.text_input(
     label="OpenAI API Key", 
     placeholder="Enter your OpenAI API key", 
     type="password"
 )
-
 if not api_key:
     st.sidebar.warning("🔑 Please enter your OpenAI API key to continue.")
     st.stop()
 
-# Initialize client
+# Initialize OpenAI client
 client = OpenAI(api_key=api_key)
 
-st.set_page_config(page_title="OpenAI Playground", layout="centered")
-
-# ── Sidebar navigation ────────────────────────────────────────────────
+# ── 3) Sidebar navigation ─────────────────────────────────────────────
 page = st.sidebar.radio("Go to:", ["Chat", "Image"])
 st.sidebar.markdown("---")
 st.sidebar.markdown("Powered by OpenAI")
 
-# ── Session-state defaults ────────────────────────────────────────────
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
-if "input_area" not in st.session_state:
-    st.session_state.input_area = ""
+# ── 4) Session-state defaults ────────────────────────────────────────
+st.session_state.setdefault("chat_history", [])
+st.session_state.setdefault("input_area", "")
 
-# ── Chat page callback ────────────────────────────────────────────────
+# ── 5) Chat callback ─────────────────────────────────────────────────
 def generate_text():
     prompt = st.session_state.input_area.strip()
     if not prompt:
         st.warning("Please enter a prompt.")
         return
 
-    # 1) record user message
+    # record user message
     st.session_state.chat_history.append({"role": "user", "content": prompt})
-
-    # 2) send to OpenAI
     try:
         resp = client.responses.create(
             model="gpt-4.1",
@@ -56,32 +50,31 @@ def generate_text():
         st.error(f"API error: {e}")
         return
 
-    # 3) record assistant reply
+    # record assistant reply
     st.session_state.chat_history.append({"role": "assistant", "content": reply})
 
-    # 4) clear input box
+    # clear input box
     st.session_state.input_area = ""
 
-# ── Render Chat page ──────────────────────────────────────────────────
+# ── 6) Render pages ──────────────────────────────────────────────────
 if page == "Chat":
     st.title("💬 Chat with History")
 
-    # render past messages
+    # show history
     for msg in st.session_state.chat_history:
         st.chat_message(msg["role"]).write(msg["content"])
 
-    # input + send button via callback
+    # input area + send button
     st.text_area("Enter your prompt:", key="input_area", height=150)
     st.button("Generate Text", on_click=generate_text)
 
     # clear history
     if st.button("🗑️ Clear History"):
-        st.session_state.chat_history = []
+        st.session_state.chat_history.clear()
 
-# ── Render Image page ─────────────────────────────────────────────────
 else:
     st.title("🖼️ GPT-Image-1 Generator")
-
+    # image inputs
     prompt = st.text_area("Image prompt:", height=100)
     size = st.selectbox("Size:", ["1024x1024", "1024x1536", "1536x1024", "auto"])
     quality = st.selectbox("Quality:", ["auto", "low", "medium", "high"])
@@ -107,7 +100,6 @@ else:
                 try:
                     result = client.images.generate(**params)
                     for img in result.data:
-                        # display either b64 or URL
                         if hasattr(img, "b64_json"):
                             st.image(img.b64_json)
                         else:
